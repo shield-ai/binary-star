@@ -10,3 +10,6 @@
 [submodule "gtsam/gtsam"]
 	path = gtsam/gtsam
 	url = https://bitbucket.org/gtborg/gtsam.git
+[submodule "toon/TooN"]
+	path = toon/TooN
+	url = https://github.com/edrosten/TooN.git
