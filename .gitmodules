@@ -1,0 +1,3 @@
+[submodule "janus/janus-gateway"]
+	path = janus/janus-gateway
+	url = git@github.com:shield-ai/janus-gateway
