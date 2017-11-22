@@ -1,3 +1,6 @@
 [submodule "janus/janus-gateway"]
 	path = janus/janus-gateway
 	url = git@github.com:shield-ai/janus-gateway
+[submodule "cpulimit/cpulimit"]
+	path = cpulimit/cpulimit
+	url = git@github.com:shield-ai/cpulimit
