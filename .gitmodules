@@ -4,3 +4,6 @@
 [submodule "cpulimit/cpulimit"]
 	path = cpulimit/cpulimit
 	url = git@github.com:shield-ai/cpulimit
+[submodule "ceres/ceres-solver"]
+	path = ceres/ceres-solver
+	url = git@github.com:shield-ai/ceres-solver
