@@ -23,6 +23,9 @@ if [ -f build.ninja ]; then
   ninja clean
 fi
 
+# Check pre-requisites
+sudo apt install -y libboost1.58-all-dev libeigen3-dev
+
 # Build
 CXX=clang++ CC=clang cmake -DGTSAM_USE_SYSTEM_EIGEN=ON -DGTSAM_WITH_EIGEN_MKL=OFF -GNinja -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGTSAM_WITH_TBB=OFF ..
 ninja
@@ -39,6 +42,7 @@ sudo -k checkinstall \
   --pkgversion=$VERSION \
   --pkgrelease="RelWithDebInfo" \
   --pkgname=gtsam-shield \
+  --requires="libboost1.58-all-dev,libeigen3-dev" \
   -y \
   ninja install
 

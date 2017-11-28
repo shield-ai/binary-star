@@ -24,6 +24,9 @@ if [ -f build.ninja ]; then
   ninja clean
 fi
 
+# Check pre-requisites
+sudo apt install -y libtinyxml-dev freeglut3-dev 
+
 # Build
 cmake -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -DCMAKE_CXX_FLAGS='-march=native' ..
 make -j4
@@ -40,6 +43,7 @@ sudo -k checkinstall \
   --pkgversion=$VERSION \
   --pkgrelease="${BUILD_TYPE}" \
   --pkgname=cvars-shield \
+  --requires="libtinyxml-dev,freeglut3-dev" \
   -y \
   make install
 

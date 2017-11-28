@@ -15,6 +15,9 @@ fi
 
 cp ../description-pak .
 
+# Check pre-requisites
+sudo apt install -y libeigen3-dev libgoogle-glog-dev
+
 # Clean up
 if [ -f build.ninja ]; then
   ninja clean
@@ -36,6 +39,7 @@ sudo -k checkinstall \
   --pkgversion=$VERSION \
   --pkgrelease="release" \
   --pkgname=ceres-solver-shield \
+  --requires="libeigen3-dev,libgoogle-glog-dev" \
   -y \
   ninja install
 
