@@ -16,3 +16,6 @@
 [submodule "cvars/CVars"]
 	path = cvars/CVars
 	url = https://github.com/arpg/CVars.git
+[submodule "cppcheck/cppcheck"]
+	path = cppcheck/cppcheck
+	url = https://github.com/danmar/cppcheck.git
