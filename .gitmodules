@@ -1,12 +1,12 @@
 [submodule "janus/janus-gateway"]
 	path = janus/janus-gateway
-	url = git@github.com:shield-ai/janus-gateway
+	url = https://github.com/shield-ai/janus-gateway
 [submodule "cpulimit/cpulimit"]
 	path = cpulimit/cpulimit
-	url = git@github.com:shield-ai/cpulimit
+	url = https://github.com/shield-ai/cpulimit
 [submodule "ceres/ceres-solver"]
 	path = ceres/ceres-solver
-	url = git@github.com:shield-ai/ceres-solver
+	url = https://github.com/shield-ai/ceres-solver
 [submodule "gtsam/gtsam"]
 	path = gtsam/gtsam
 	url = https://bitbucket.org/gtborg/gtsam.git
