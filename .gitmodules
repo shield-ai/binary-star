@@ -19,3 +19,6 @@
 [submodule "cppcheck/cppcheck"]
 	path = cppcheck/cppcheck
 	url = https://github.com/danmar/cppcheck.git
+[submodule "googletest/googletest"]
+	path = googletest/googletest
+	url = https://github.com/google/googletest.git
