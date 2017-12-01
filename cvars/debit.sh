@@ -49,6 +49,7 @@ sudo -k checkinstall \
 
 sudo chown "$USER":"$USER" $DEBFILE
 dpkg -x $DEBFILE temp
+cp --preserve=links libcvars.so temp/usr/local/lib/libcvars.so
 ln -sf /usr/local/include/cvars temp/usr/local/include/CVars
 dpkg -e $DEBFILE temp/DEBIAN
 dpkg -b temp ../../../debs/$DEBFILE
