@@ -1,0 +1,213 @@
+diff -Naur gstreamer-vaapi-old/gstreamer-vaapi-1.8.3/debian/changelog gstreamer-vaapi/gstreamer-vaapi-1.8.3/debian/changelog
+--- gstreamer-vaapi-old/gstreamer-vaapi-1.8.3/debian/changelog	2016-11-22 01:40:36.000000000 -0800
++++ gstreamer-vaapi/gstreamer-vaapi-1.8.3/debian/changelog	2017-09-06 14:22:02.361329112 -0700
+@@ -1,3 +1,9 @@
++gstreamer-vaapi (1.8.3-1~ubuntu0.2) xenial; urgency=medium
++
++  * Backported VP8 CBR support 
++
++ -- Scott Hollwedel <scott.hollwedel@shield.ai>  Wed, 06 Sep 2017 09:40:36 +0000
++
+ gstreamer-vaapi (1.8.3-1~ubuntu0.1) xenial; urgency=medium
+ 
+   * No-change backport to xenial (LP: #1619600)
+diff -Naur gstreamer-vaapi-old/gstreamer-vaapi-1.8.3/gst/vaapi/gstvaapiencode_vp8.c gstreamer-vaapi/gstreamer-vaapi-1.8.3/gst/vaapi/gstvaapiencode_vp8.c
+--- gstreamer-vaapi-old/gstreamer-vaapi-1.8.3/gst/vaapi/gstvaapiencode_vp8.c	2016-03-24 04:36:59.000000000 -0700
++++ gstreamer-vaapi/gstreamer-vaapi-1.8.3/gst/vaapi/gstvaapiencode_vp8.c	2017-09-06 14:24:37.102541326 -0700
+@@ -52,7 +52,7 @@
+ 
+ /* *INDENT-OFF* */
+ static const char gst_vaapiencode_vp8_sink_caps_str[] =
+-  GST_VAAPI_MAKE_ENC_SURFACE_CAPS ", "
++  GST_VAAPI_MAKE_SURFACE_CAPS ", "
+   GST_CAPS_INTERLACED_FALSE "; "
+   GST_VIDEO_CAPS_MAKE (GST_VIDEO_FORMATS_ALL) ", "
+   GST_CAPS_INTERLACED_FALSE;
+@@ -166,12 +166,12 @@
+       "Sreerenj Balachandran <sreerenj.balachandran@intel.com>");
+ 
+   /* sink pad */
+-  gst_element_class_add_pad_template (element_class,
+-      gst_static_pad_template_get (&gst_vaapiencode_vp8_sink_factory));
++  gst_element_class_add_static_pad_template (element_class,
++      &gst_vaapiencode_vp8_sink_factory);
+ 
+   /* src pad */
+-  gst_element_class_add_pad_template (element_class,
+-      gst_static_pad_template_get (&gst_vaapiencode_vp8_src_factory));
++  gst_element_class_add_static_pad_template (element_class,
++      &gst_vaapiencode_vp8_src_factory);
+ 
+   gst_vaapiencode_class_init_properties (encode_class);
+ }
+diff -Naur gstreamer-vaapi-old/gstreamer-vaapi-1.8.3/gst-libs/gst/vaapi/gstvaapiencoder_vp8.c gstreamer-vaapi/gstreamer-vaapi-1.8.3/gst-libs/gst/vaapi/gstvaapiencoder_vp8.c
+--- gstreamer-vaapi-old/gstreamer-vaapi-1.8.3/gst-libs/gst/vaapi/gstvaapiencoder_vp8.c	2016-08-19 01:13:45.000000000 -0700
++++ gstreamer-vaapi/gstreamer-vaapi-1.8.3/gst-libs/gst/vaapi/gstvaapiencoder_vp8.c	2017-09-06 14:25:08.514787397 -0700
+@@ -39,7 +39,8 @@
+ 
+ /* Supported set of VA rate controls, within this implementation */
+ #define SUPPORTED_RATECONTROLS                  \
+-  (GST_VAAPI_RATECONTROL_MASK (CQP))
++  (GST_VAAPI_RATECONTROL_MASK (CQP) |           \
++   GST_VAAPI_RATECONTROL_MASK (CBR))
+ 
+ /* Supported set of tuning options, within this implementation */
+ #define SUPPORTED_TUNE_OPTIONS \
+@@ -129,8 +130,9 @@
+             gst_util_uint64_scale (GST_VAAPI_ENCODER_WIDTH (encoder) *
+             GST_VAAPI_ENCODER_HEIGHT (encoder),
+             GST_VAAPI_ENCODER_FPS_N (encoder),
+-            GST_VAAPI_ENCODER_FPS_D (encoder)) / 4 * 1000;
++            GST_VAAPI_ENCODER_FPS_D (encoder)) / (4 * 1000);
+       }
++      break;
+     default:
+       base_encoder->bitrate = 0;
+       break;
+@@ -163,8 +165,9 @@
+   base_encoder->num_ref_frames = 3;
+ 
+   /* Only YUV 4:2:0 formats are supported for now. */
++  /* Assumig 4 times compression ratio */
+   base_encoder->codedbuf_size = GST_ROUND_UP_16 (vip->width) *
+-      GST_ROUND_UP_16 (vip->height) * 3 / 2;
++      GST_ROUND_UP_16 (vip->height) * 12 / 4;
+ 
+   base_encoder->codedbuf_size +=
+       MAX_FRAME_TAG_SIZE + MAX_UPDATE_SEGMENTATION_SIZE +
+@@ -218,7 +221,7 @@
+   seq_param->frame_height = GST_VAAPI_ENCODER_HEIGHT (encoder);
+ 
+   if (GST_VAAPI_ENCODER_RATE_CONTROL (encoder) & GST_VAAPI_RATECONTROL_CBR)
+-    seq_param->bits_per_second = base_encoder->bitrate;
++    seq_param->bits_per_second = base_encoder->bitrate * 1000;
+ 
+   seq_param->intra_period = base_encoder->keyframe_period;
+ 
+@@ -246,9 +249,71 @@
+   gst_vaapi_codec_object_replace (&sequence, NULL);
+   return TRUE;
+ 
++  /* ERRORS */
+ error:
+-  gst_vaapi_codec_object_replace (&sequence, NULL);
+-  return FALSE;
++  {
++    gst_vaapi_codec_object_replace (&sequence, NULL);
++    return FALSE;
++  }
++}
++
++static gboolean
++ensure_misc_params (GstVaapiEncoderVP8 * encoder, GstVaapiEncPicture * picture)
++{
++  GstVaapiEncoder *const base_encoder = GST_VAAPI_ENCODER_CAST (encoder);
++  GstVaapiEncMiscParam *misc;
++
++  if (GST_VAAPI_ENCODER_RATE_CONTROL (encoder) != GST_VAAPI_RATECONTROL_CBR)
++    return TRUE;
++
++  misc = GST_VAAPI_ENC_MISC_PARAM_NEW (FrameRate, encoder);
++  if (!misc)
++    return FALSE;
++  {
++    VAEncMiscParameterFrameRate *param = misc->data;
++    param->framerate =
++        GST_VAAPI_ENCODER_FPS_N (encoder) / GST_VAAPI_ENCODER_FPS_D (encoder);
++  }
++  gst_vaapi_enc_picture_add_misc_param (picture, misc);
++  gst_vaapi_codec_object_replace (&misc, NULL);
++
++  misc = GST_VAAPI_ENC_MISC_PARAM_NEW (HRD, encoder);
++  if (!misc)
++    return FALSE;
++  {
++    VAEncMiscParameterHRD *hrd = misc->data;
++    if (base_encoder->bitrate > 0) {
++      hrd->buffer_size = base_encoder->bitrate * 1000 * 2;
++      hrd->initial_buffer_fullness = base_encoder->bitrate * 1000;
++    } else {
++      hrd->buffer_size = 0;
++      hrd->initial_buffer_fullness = 0;
++    }
++  }
++
++  gst_vaapi_enc_picture_add_misc_param (picture, misc);
++  gst_vaapi_codec_object_replace (&misc, NULL);
++
++  /* RateControl params */
++  misc = GST_VAAPI_ENC_MISC_PARAM_NEW (RateControl, encoder);
++  if (!misc)
++    return FALSE;
++  {
++    VAEncMiscParameterRateControl *rate_control;
++    rate_control = misc->data;
++    rate_control->bits_per_second = base_encoder->bitrate * 1000;
++    rate_control->target_percentage = 70;
++    /* CPB (Coded picture buffer) length in milliseconds, which could
++     * be provided as a property */
++    rate_control->window_size = 500;
++    rate_control->initial_qp = encoder->yac_qi;
++    rate_control->min_qp = 1;
++  }
++
++  gst_vaapi_enc_picture_add_misc_param (picture, misc);
++  gst_vaapi_codec_object_replace (&misc, NULL);
++
++  return TRUE;
+ }
+ 
+ static gboolean
+@@ -298,6 +363,10 @@
+ 
+   pic_param->sharpness_level = encoder->sharpness_level;
+ 
++  /* Used for CBR */
++  pic_param->clamp_qindex_low = 0;
++  pic_param->clamp_qindex_high = 127;
++
+   return TRUE;
+ }
+ 
+@@ -370,6 +439,8 @@
+ 
+   if (!ensure_sequence (encoder, picture))
+     goto error;
++  if (!ensure_misc_params (encoder, picture))
++    goto error;
+   if (!ensure_picture (encoder, picture, codedbuf, reconstruct))
+     goto error;
+   if (!ensure_quantization_table (encoder, picture))
+@@ -383,11 +454,15 @@
+   }
+ 
+   return GST_VAAPI_ENCODER_STATUS_SUCCESS;
++
++  /* ERRORS */
+ error:
+-  if (reconstruct)
+-    gst_vaapi_encoder_release_surface (GST_VAAPI_ENCODER (encoder),
+-        reconstruct);
+-  return ret;
++  {
++    if (reconstruct)
++      gst_vaapi_encoder_release_surface (GST_VAAPI_ENCODER (encoder),
++          reconstruct);
++    return ret;
++  }
+ }
+ 
+ static GstVaapiEncoderStatus
+@@ -445,8 +520,11 @@
+ 
+   return set_context_info (base_encoder);
+ 
++  /* ERRORS */
+ error:
+-  return GST_VAAPI_ENCODER_STATUS_ERROR_OPERATION_FAILED;
++  {
++    return GST_VAAPI_ENCODER_STATUS_ERROR_OPERATION_FAILED;
++  }
+ }
+ 
+ static gboolean

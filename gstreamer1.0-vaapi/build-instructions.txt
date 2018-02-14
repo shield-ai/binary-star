@@ -1,0 +1,12 @@
+To build the custom deb:
+
+Overview available here: https://wiki.debian.org/BuildingTutorial
+
+Must be on the compute stick for this to work correctly - doing this on a desktop will cause the build to fail on a missing depencency for VAAPI. 
+
+1. Enable the source repository for ubuntu
+2. Grab the source from the repo
+3. Apply the provided patch(es)
+4. Attempt to build the package - note the missing dependencies
+5. Install the required dependencies
+6. Actually build the package
