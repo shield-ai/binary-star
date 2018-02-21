@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="0.0.4"
+VERSION="0.0.5"
 TARGET_DIR="/opt/janus"
 
 set -e
@@ -18,7 +18,7 @@ if [ -f Makefile ]; then
 fi
 
 # Check pre-requisites
-sudo apt install libmicrohttpd-dev libjansson-dev libnice-dev \
+sudo apt install libmicrohttpd-dev libjansson-dev libnice-dev=0.1.13-0ubuntu3 \
   libssl-dev libsrtp-dev libsofia-sip-ua-dev libglib2.0-dev \
   libopus-dev libogg-dev libini-config-dev libcollection-dev \
   pkg-config gengetopt libtool automake dh-autoreconf libwebsockets-dev
@@ -47,7 +47,7 @@ sudo -k checkinstall \
   --pkgrelease="stable" \
   --pkgname=janus-gateway \
   --include=shieldconfigs \
-  --requires="libmicrohttpd-dev,libjansson-dev,libnice-dev,libssl-dev,libsrtp-dev,libsofia-sip-ua-dev,libglib2.0-dev,libopus-dev,libogg-dev,libini-config-dev,libcollection-dev,pkg-config,gengetopt,libtool,automake,dh-autoreconf,libwebsockets-dev" \
+  --requires="libmicrohttpd10,libjansson4,libnice10,libssl1.0.0,libsrtp0,libsofia-sip-ua0,libglib2.0-0,libopus0,libogg0,libini-config5,libcollection4,libwebsockets7" \
   -y \
   make install
 
